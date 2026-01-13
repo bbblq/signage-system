@@ -69,6 +69,44 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 
 
+## 📦 Docker 镜像发布与部署
+
+### 1. 构建并推送到 Docker Hub
+如果你想自己构建镜像并发布：
+
+```bash
+# 构建镜像
+docker build -t bbblq/signage-system:latest .
+
+# 推送镜像
+docker login
+docker push bbblq/signage-system:latest
+```
+
+### 2. 使用 Docker Compose 部署 (使用已发布的镜像)
+无需下载源码，只需创建一个 `docker-compose.yml` 文件即可运行：
+
+```yaml
+version: '3'
+services:
+  signage-system:
+    image: bbblq/signage-system:latest
+    container_name: signage-system
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./images:/app/images
+      - ./devices.json:/app/devices.json
+    environment:
+      - TZ=Asia/Shanghai
+    restart: unless-stopped
+```
+
+启动服务：
+```bash
+docker-compose up -d
+```
+
 ## 🏗️ 项目结构
 
 ```
