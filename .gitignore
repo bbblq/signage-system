@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+dist/
+*.spec
+*.exe
+
+# Logs
+*.log
+server_error.log
+
+# Data files
+devices.json
+
+# Images (except default)
+images/*
+!images/.gitkeep
+!images/default.jpg
+
+# Archive
+*.7z
+*.zip
+*.tar.gz
+
+# Docker
+.env

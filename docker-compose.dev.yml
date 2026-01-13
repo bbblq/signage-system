@@ -1,0 +1,27 @@
+name: signage-system
+
+services:
+  signage-system:
+    build: .
+    container_name: signage-system-dev
+    ports:
+      - "8000:8000"
+    volumes:
+      # 持久化图片存储
+      - ./images:/app/images
+      # 持久化设备数据
+      - ./devices.json:/app/devices.json
+      # 开发模式：挂载代码文件，实现热更新
+      - ./main.py:/app/main.py
+      - ./static:/app/static
+    environment:
+      - TZ=Asia/Shanghai
+    # 开发模式：启用热重载
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+    networks:
+      - signage-network
+
+networks:
+  signage-network:
+    driver: bridge

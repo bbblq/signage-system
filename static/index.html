@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>信发系统 - 管理界面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 25px 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* 主布局 - 左右布局 */
+        .main-layout {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        /* 设备区 - 左侧悬浮 */
+        .devices-section {
+            position: sticky;
+            top: 20px;
+            width: 260px;
+            flex-shrink: 0;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        /* 内容区 */
+        .content-section {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 区域通用样式 */
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-hint {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2196f3;
+            font-size: 12px;
+            color: #1565c0;
+            line-height: 1.5;
+        }
+
+        /* 图片库 - 网格布局 */
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .image-gallery::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .image-gallery::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .image-gallery::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .image-card {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: grab;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .image-card:active {
+            cursor: grabbing;
+        }
+
+        .image-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            border-color: #667eea;
+        }
+
+        .image-card.dragging {
+            opacity: 0.5;
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+        }
+
+        .image-card .filename {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px;
+            font-size: 10px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 时间轴 */
+        .timeline {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 120px;
+            border: 3px dashed #ccc;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            align-items: center;
+        }
+
+        .timeline.drag-over {
+            border-color: #28a745;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        }
+
+        .timeline-empty {
+            width: 100%;
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .timeline-item {
+            position: relative;
+            min-width: 100px;
+            flex-shrink: 0;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .timeline-item img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+        }
+
+        .timeline-item-remove {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timeline-item-order {
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        /* 节目库 */
+        .program-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .program-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .program-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .program-list::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .program-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: grab;
+            transition: all 0.3s ease;
+            border: 2px solid #e9ecef;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            position: relative;
+        }
+
+        .program-card:active {
+            cursor: grabbing;
+        }
+
+        .program-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            border-color: #667eea;
+        }
+
+        .program-card.dragging {
+            opacity: 0.5;
+        }
+
+        .program-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .program-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .program-details {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .program-thumbnails {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .program-thumbnail {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            object-fit: cover;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .drag-hint {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 16px;
+            opacity: 0.3;
+        }
+
+        /* 设备区 - 竖向列表 */
+        .device-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 10px 0;
+        }
+
+        .device-grid::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .device-grid::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .device-grid::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .device-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 3px dashed transparent;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            position: relative;
+            min-width: 180px;
+            flex-shrink: 0;
+        }
+
+        .device-card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border-color: #667eea;
+        }
+
+        .device-card.drag-over {
+            border-color: #28a745;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            transform: scale(1.02);
+        }
+
+        .device-card.pending-push {
+            border-color: #ffc107;
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+        }
+
+        .tv-icon {
+            font-size: 36px;
+            margin-bottom: 6px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+        }
+
+        .device-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .device-status {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .device-current {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .device-thumbnail {
+            width: 100%;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
+
+        .device-program {
+            font-size: 10px;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .pending-program {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .pending-program-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 6px;
+        }
+
+        .pending-thumbnails {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pending-thumbnail {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #6a4c93 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+            transform: translateY(-2px);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 消息提示 */
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            display: none;
+            font-weight: 500;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.3s ease-out;
+            z-index: 1000;
+            max-width: 400px;
+        }
+
+        .message.success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+
+        .message.error {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+            font-size: 13px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>📺 信发系统管理界面</h1>
+            <p class="subtitle">单图直接拖到设备推送 · 多图先创建节目再推送</p>
+            <div
+                style="margin-top: 12px; padding: 10px; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-radius: 8px; border-left: 4px solid #2196f3;">
+                <div style="font-size: 13px; color: #1565c0; font-weight: 500;">
+                    📡 <strong>显示端地址：</strong><span id="displayUrls" style="margin-left: 8px;">正在获取...</span>
+                </div>
+                <div style="font-size: 11px; color: #1976d2; margin-top: 4px;">
+                    <div style="margin-bottom:4px">💡 在显示端设备浏览器中打开上述地址即可连接</div>
+                    <div>📦 显示端可以去 <a href="https://www.appcreator24.com/" target="_blank" rel="noopener noreferrer"
+                            style="color:#0d47a1; text-decoration:underline;">https://www.appcreator24.com/</a> 打包一个
+                        Android TV 的 APK 固定访问网址就可以了。</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <!-- 设备区 - 固定在顶部 -->
+            <div class="devices-section">
+                <div class="section-header">
+                    <div class="section-title">📱 在线设备</div>
+                    <button class="btn btn-primary btn-small" onclick="loadDevices()">🔄 刷新</button>
+                </div>
+                <div class="section-hint">
+                    💡 拖动<strong>单张图片</strong>或<strong>节目</strong>到设备，点击确认推送
+                </div>
+                <div class="device-grid" id="deviceGrid">
+                    <div class="empty-state">正在加载...</div>
+                </div>
+            </div>
+
+            <!-- 内容区 -->
+            <div class="content-section">
+                <!-- 图片库 -->
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-title">📸 图片库</div>
+                        <div>
+                            <input type="file" id="fileInput" accept="image/*" multiple style="display: none;"
+                                onchange="uploadImages()">
+                            <button class="btn btn-primary btn-small"
+                                onclick="document.getElementById('fileInput').click()">
+                                📤 上传
+                            </button>
+                            <button class="btn btn-primary btn-small" onclick="loadImages()">🔄 刷新</button>
+                        </div>
+                    </div>
+                    <div class="section-hint">
+                        💡 <strong>单图直推：</strong>拖动单张图片到上方设备 · <strong>多图轮播：</strong>拖动多张图片到下方时间轴创建节目
+                    </div>
+                    <div class="image-gallery" id="imageGallery">
+                        <div class="empty-state">正在加载...</div>
+                    </div>
+                </div>
+
+                <!-- 节目编辑器 -->
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-title">🎬 多图轮播节目</div>
+                    </div>
+                    <div class="section-hint">
+                        💡 拖动多张图片到时间轴排序，填写节目信息，创建轮播节目
+                    </div>
+
+                    <!-- 节目信息输入 -->
+                    <div
+                        style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <div
+                            style="display: grid; grid-template-columns: 1fr 150px auto; gap: 12px; align-items: center;">
+                            <div>
+                                <label
+                                    style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px;">节目名称</label>
+                                <input type="text" id="programName" placeholder="例如：新年促销"
+                                    style="width: 100%; padding: 10px 12px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px;">
+                            </div>
+                            <div>
+                                <label
+                                    style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px;">轮播间隔</label>
+                                <div style="position: relative;">
+                                    <input type="number" id="programInterval" value="10" min="5" max="300"
+                                        style="width: 100%; padding: 10px 12px; padding-right: 35px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px;">
+                                    <span
+                                        style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #666; font-size: 14px; pointer-events: none;">秒</span>
+                                </div>
+                            </div>
+                            <div style="padding-top: 24px;">
+                                <button class="btn btn-success" onclick="createProgram()" style="white-space: nowrap;">✅
+                                    创建</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 时间轴 -->
+                    <div
+                        style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; padding: 15px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="font-size: 14px; font-weight: 600; color: #333;">📸 时间轴</div>
+                            <button class="btn btn-danger btn-small" onclick="clearTimeline()">🗑️ 清空</button>
+                        </div>
+                        <div class="timeline" id="timeline" ondragover="handleTimelineDragOver(event)"
+                            ondragleave="handleTimelineDragLeave(event)" ondrop="handleTimelineDrop(event)">
+                            <div class="timeline-empty">拖动图片到这里</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 节目库 -->
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-title">📺 节目库</div>
+                    </div>
+                    <div class="section-hint">
+                        💡 拖动节目到左侧设备推送
+                    </div>
+                    <div class="program-list" id="programList">
+                        <div class="empty-state">暂无节目</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let timelineImages = [];
+        let programs = [];
+        let devices = {};
+        let draggedImage = null;
+        let draggedProgram = null;
+        let pendingPushes = {}; // {deviceId: {type: 'image'|'program', data: ...}}
+
+        // 加载图片
+        async function loadImages() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/manager/images`);
+                const images = await response.json();
+                const gallery = document.getElementById('imageGallery');
+
+                if (images.length === 0) {
+                    gallery.innerHTML = '<div class="empty-state">暂无图片</div>';
+                    return;
+                }
+
+                gallery.innerHTML = images.map(img => `
+                    <div class="image-card" draggable="true" data-filename="${img.filename}"
+                         ondragstart="handleImageDragStart(event, '${img.filename}')"
+                         ondragend="handleImageDragEnd(event)">
+                        <img src="${img.url}" alt="${img.filename}">
+                        <div class="filename">${img.filename}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                showMessage('加载图片失败', 'error');
+            }
+        }
+
+        // 上传图片
+        async function uploadImages() {
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+            if (!files || files.length === 0) return;
+
+            let successCount = 0;
+            showMessage(`正在上传 ${files.length} 张图片...`, 'success');
+
+            for (let file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+                try {
+                    const response = await fetch(`${API_BASE}/api/v1/manager/upload_image`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (response.ok) successCount++;
+                } catch (error) {
+                    console.error('上传失败:', error);
+                }
+            }
+
+            showMessage(`✅ 成功上传 ${successCount} 张图片`, 'success');
+            fileInput.value = '';
+            loadImages();
+        }
+
+        // 图片拖拽
+        function handleImageDragStart(event, filename) {
+            draggedImage = filename;
+            event.target.classList.add('dragging');
+        }
+
+        function handleImageDragEnd(event) {
+            event.target.classList.remove('dragging');
+        }
+
+        function handleTimelineDragOver(event) {
+            event.preventDefault();
+            document.getElementById('timeline').classList.add('drag-over');
+        }
+
+        function handleTimelineDragLeave(event) {
+            document.getElementById('timeline').classList.remove('drag-over');
+        }
+
+        function handleTimelineDrop(event) {
+            event.preventDefault();
+            document.getElementById('timeline').classList.remove('drag-over');
+
+            if (draggedImage) {
+                timelineImages.push(draggedImage);
+                renderTimeline();
+                draggedImage = null;
+            }
+        }
+
+        // 渲染时间轴
+        function renderTimeline() {
+            const timeline = document.getElementById('timeline');
+
+            if (timelineImages.length === 0) {
+                timeline.innerHTML = '<div class="timeline-empty">拖动图片到这里</div>';
+                return;
+            }
+
+            timeline.innerHTML = timelineImages.map((filename, index) => `
+                <div class="timeline-item">
+                    <img src="/images/${filename}" alt="${filename}">
+                    <div class="timeline-item-order">${index + 1}</div>
+                    <button class="timeline-item-remove" onclick="removeFromTimeline(${index})">×</button>
+                </div>
+            `).join('');
+        }
+
+        function removeFromTimeline(index) {
+            timelineImages.splice(index, 1);
+            renderTimeline();
+        }
+
+        function clearTimeline() {
+            timelineImages = [];
+            renderTimeline();
+        }
+
+        // 创建节目
+        function createProgram() {
+            const name = document.getElementById('programName').value.trim();
+            const interval = parseInt(document.getElementById('programInterval').value) || 10;
+
+            if (!name) {
+                showMessage('请输入节目名称', 'error');
+                return;
+            }
+
+            if (timelineImages.length === 0) {
+                showMessage('请先拖动图片到时间轴', 'error');
+                return;
+            }
+
+            const program = {
+                id: Date.now().toString(),
+                name: name,
+                images: [...timelineImages],
+                interval: interval,
+                createTime: new Date().toLocaleString()
+            };
+
+            programs.push(program);
+            showMessage(`✅ 节目"${name}"创建成功！包含${timelineImages.length}张图片`, 'success');
+
+            // 清空
+            timelineImages = [];
+            document.getElementById('programName').value = '';
+            renderTimeline();
+            renderPrograms();
+        }
+
+        // 渲染节目列表
+        function renderPrograms() {
+            const list = document.getElementById('programList');
+
+            if (programs.length === 0) {
+                list.innerHTML = '<div class="empty-state">暂无节目</div>';
+                return;
+            }
+
+            list.innerHTML = programs.map(program => {
+                const thumbnails = program.images.slice(0, 6).map(img =>
+                    `<img src="/images/${img}" class="program-thumbnail" alt="${img}">`
+                ).join('');
+                const moreText = program.images.length > 6 ? `+${program.images.length - 6}` : '';
+
+                return `
+                    <div class="program-card" draggable="true" data-program-id="${program.id}"
+                         ondragstart="handleProgramDragStart(event, '${program.id}')"
+                         ondragend="handleProgramDragEnd(event)">
+                        <div class="drag-hint">👉</div>
+                        <div class="program-card-header">
+                            <div class="program-name">📺 ${program.name}</div>
+                            <button class="btn btn-danger btn-small" onclick="deleteProgram('${program.id}', event)">删除</button>
+                        </div>
+                        <div class="program-details">
+                            ${program.images.length}张 · ${program.interval}秒/张
+                        </div>
+                        <div class="program-thumbnails">
+                            ${thumbnails}
+                            ${moreText ? `<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#f0f0f0;border-radius:4px;font-size:11px;font-weight:600;">${moreText}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function deleteProgram(programId, event) {
+            event.stopPropagation();
+            if (!confirm('确定要删除这个节目吗？')) return;
+
+            programs = programs.filter(p => p.id !== programId);
+            renderPrograms();
+            showMessage('✅ 节目已删除', 'success');
+        }
+
+        // 节目拖拽
+        function handleProgramDragStart(event, programId) {
+            draggedProgram = programs.find(p => p.id === programId);
+            event.target.classList.add('dragging');
+        }
+
+        function handleProgramDragEnd(event) {
+            event.target.classList.remove('dragging');
+        }
+
+        let draggedDevice = null;
+
+        // 修改设备名称
+        async function editDeviceName(deviceId, currentName) {
+            const newName = prompt('请输入新的设备名称:', currentName);
+            if (newName && newName.trim() !== '' && newName !== currentName) {
+                try {
+                    await fetch(`${API_BASE}/api/v1/manager/set_device_name`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ device_id: deviceId, name: newName })
+                    });
+                    loadDevices();
+                } catch (e) {
+                    showMessage('修改名称失败', 'error');
+                }
+            }
+        }
+
+        // 删除设备
+        async function deleteDevice(deviceId) {
+            if (!confirm('确定要删除此设备吗？')) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/v1/manager/delete_device/${deviceId}`, {
+                    method: 'DELETE'
+                });
+                if (res.ok) {
+                    loadDevices();
+                    showMessage('设备已删除', 'success');
+                } else {
+                    showMessage('删除失败', 'error');
+                }
+            } catch (e) {
+                showMessage('删除失败', 'error');
+            }
+        }
+
+        // 设备排序拖拽处理
+        function handleDeviceSortStart(event, deviceId) {
+            // 如果是点击了卡片内部的非拖拽区域（如按钮），不要启动排序拖拽
+            if (event.target.tagName === 'BUTTON' || event.target.closest('button')) {
+                event.preventDefault();
+                return;
+            }
+            draggedDevice = deviceId;
+            event.dataTransfer.effectAllowed = 'move';
+            requestAnimationFrame(() => event.target.style.opacity = '0.5');
+        }
+
+        function handleDeviceSortEnd(event) {
+            draggedDevice = null;
+            event.target.style.opacity = '1';
+            document.querySelectorAll('.device-card').forEach(c => {
+                c.classList.remove('sort-over');
+                c.style.borderTop = '';
+                c.style.borderBottom = '';
+            });
+        }
+
+        function handleDeviceSortOver(event) {
+            if (draggedDevice) {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+                // 简单的视觉反馈
+                event.currentTarget.classList.add('sort-over');
+            } else {
+                // 允许图片/节目拖拽
+                handleDeviceDragOver(event);
+            }
+        }
+
+        function handleDeviceSortLeave(event) {
+            if (draggedDevice) {
+                event.currentTarget.classList.remove('sort-over');
+            } else {
+                handleDeviceDragLeave(event);
+            }
+        }
+
+        async function handleDeviceSortDrop(event, targetDeviceId) {
+            if (draggedDevice) {
+                event.preventDefault();
+                event.stopPropagation();
+                if (draggedDevice === targetDeviceId) return;
+
+                const deviceIds = Object.keys(devices);
+                const fromIndex = deviceIds.indexOf(draggedDevice);
+                const toIndex = deviceIds.indexOf(targetDeviceId);
+
+                if (fromIndex >= 0 && toIndex >= 0) {
+                    // 移动数组元素
+                    deviceIds.splice(fromIndex, 1);
+                    deviceIds.splice(toIndex, 0, draggedDevice);
+
+                    // 乐观更新前端
+                    const newDevices = {};
+                    deviceIds.forEach(id => newDevices[id] = devices[id]);
+                    devices = newDevices;
+                    renderDevices();
+
+                    // 提交后端
+                    try {
+                        await fetch(`${API_BASE}/api/v1/manager/update_device_order`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ new_order: deviceIds })
+                        });
+                    } catch (e) {
+                        console.error("排序更新失败", e);
+                        loadDevices(); // 失败回滚
+                    }
+                }
+            } else {
+                // 处理图片/节目投放
+                handleDeviceDrop(event, targetDeviceId);
+            }
+        }
+
+        // 加载设备
+        async function loadDevices() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/manager/devices`);
+                devices = await response.json();
+                renderDevices();
+            } catch (error) {
+                showMessage('加载设备失败', 'error');
+            }
+        }
+
+        // 渲染设备
+        function renderDevices() {
+            const grid = document.getElementById('deviceGrid');
+            const deviceCards = Object.entries(devices).map(([deviceId, status]) => {
+                const isOnline = status.status === 'online';
+                const name = status.name || deviceId;
+                // 获取当前显示内容名称
+                let currentDisplay = '默认待机';
+                if (status.current_program_name) {
+                    currentDisplay = `📺 ${status.current_program_name}`;
+                } else if (status.current_task) {
+                    const filename = status.current_task.split('/').pop();
+                    if (filename && filename !== 'default.jpg') {
+                        currentDisplay = `📸 ${decodeURIComponent(filename)}`;
+                    }
+                }
+                const pending = pendingPushes[deviceId];
+                const thumbnailUrl = status.current_task || '/images/default.jpg';
+                const isSortable = !pending;
+
+                return `
+                    <div class="device-card ${pending ? 'pending-push' : ''}" data-device-id="${deviceId}"
+                         ${isSortable ? 'draggable="true"' : ''}
+                         ondragstart="handleDeviceSortStart(event, '${deviceId}')"
+                         ondragend="handleDeviceSortEnd(event)"
+                         ondragover="handleDeviceSortOver(event)"
+                         ondragleave="handleDeviceSortLeave(event)"
+                         ondrop="handleDeviceSortDrop(event, '${deviceId}')">
+                        <div class="tv-icon">📺</div>
+                        <div class="device-name" title="${name}">${name}</div>
+                        <div class="device-status">${isOnline ? '🟢 在线' : '🔴 离线'}</div>
+                        <div class="device-program" style="margin-bottom:4px; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${currentDisplay}</div>
+                        
+                        ${pending ? `
+                            <div class="pending-program">
+                                <div class="pending-program-name">
+                                    ${pending.type === 'image' ? '📸 单图' : '📺 ' + pending.data.name}
+                                </div>
+                                ${pending.type === 'program' ? `
+                                    <div class="pending-thumbnails">
+                                        ${pending.data.images.slice(0, 4).map(img =>
+                    `<img src="/images/${img}" class="pending-thumbnail" alt="${img}">`
+                ).join('')}
+                                    </div>
+                                ` : `
+                                    <img src="/images/${pending.data}" style="width:100%;height:30px;object-fit:cover;border-radius:4px;margin:4px 0;">
+                                `}
+                                <div style="display:flex; gap:4px; margin-top:4px;">
+                                    <button class="btn btn-success btn-small" style="flex:1; padding:4px;" onclick="confirmPush('${deviceId}')">确认</button>
+                                    <button class="btn btn-danger btn-small" style="flex:1; padding:4px;" onclick="cancelPush('${deviceId}')">取消</button>
+                                </div>
+                            </div>
+                        ` : `
+                            <img src="${thumbnailUrl}" class="device-thumbnail">
+                            <div class="device-tools" style="display:flex; justify-content:center; gap:8px; margin-top:8px;">
+                                <button class="btn btn-small" style="padding:4px 8px; background:#f0f0f0; color:#333;" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); editDeviceName('${deviceId}', '${name}')" title="重命名">✏️</button>
+                                <button class="btn btn-danger btn-small" style="padding:4px 8px;" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); deleteDevice('${deviceId}')" title="删除">🗑️</button>
+                            </div>
+                        `}
+                    </div>
+                `;
+            }).join('');
+
+            grid.innerHTML = deviceCards || '<div class="empty-state">暂无设备</div>';
+        }
+
+        function handleDeviceDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDeviceDragLeave(event) {
+            event.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDeviceDrop(event, deviceId) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('drag-over');
+
+            if (draggedImage) {
+                // 单图直推
+                pendingPushes[deviceId] = {
+                    type: 'image',
+                    data: draggedImage
+                };
+                showMessage(`📸 单图已放置，请点击"确认推送"`, 'success');
+                draggedImage = null;
+            } else if (draggedProgram) {
+                // 节目推送
+                pendingPushes[deviceId] = {
+                    type: 'program',
+                    data: draggedProgram
+                };
+                showMessage(`📺 节目"${draggedProgram.name}"已放置，请点击"确认推送"`, 'success');
+                draggedProgram = null;
+            }
+
+            renderDevices();
+        }
+
+        // 确认推送
+        async function confirmPush(deviceId) {
+            const pending = pendingPushes[deviceId];
+            if (!pending) return;
+
+            try {
+                if (pending.type === 'image') {
+                    // 推送单图
+                    const response = await fetch(`${API_BASE}/api/v1/manager/push_image`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            device_id: deviceId,
+                            image_filename: pending.data
+                        })
+                    });
+                    if (response.ok) {
+                        showMessage(`✅ 单图推送成功！`, 'success');
+                    } else {
+                        showMessage('❌ 推送失败', 'error');
+                    }
+                } else {
+                    // 推送节目
+                    const response = await fetch(`${API_BASE}/api/v1/manager/start_slideshow`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            device_id: deviceId,
+                            image_filenames: pending.data.images,
+                            interval_seconds: pending.data.interval,
+                            program_name: pending.data.name
+                        })
+                    });
+                    if (response.ok) {
+                        showMessage(`✅ 节目"${pending.data.name}"推送成功！`, 'success');
+                    } else {
+                        showMessage('❌ 推送失败', 'error');
+                    }
+                }
+
+                delete pendingPushes[deviceId];
+                setTimeout(() => loadDevices(), 1000);
+            } catch (error) {
+                showMessage('❌ 推送失败', 'error');
+            }
+        }
+
+        // 取消推送
+        function cancelPush(deviceId) {
+            delete pendingPushes[deviceId];
+            renderDevices();
+            showMessage('已取消', 'success');
+        }
+
+        // 显示消息
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type} show`;
+            setTimeout(() => messageEl.classList.remove('show'), 5000);
+        }
+
+        // 初始化
+        loadImages();
+        loadDevices();
+        renderPrograms();
+        renderTimeline();
+        getDisplayUrls();
+
+        // 获取显示端地址
+        async function getDisplayUrls() {
+            try {
+                // 获取当前主机名和端口
+                const port = window.location.port || '8000';
+                const protocol = window.location.protocol;
+
+                // 尝试从后端获取IP地址
+                const response = await fetch(`${API_BASE}/api/v1/manager/devices`);
+
+                // 使用当前访问的地址
+                const currentHost = window.location.hostname;
+                let displayUrl = `${protocol}//${currentHost}:${port}/`;
+
+                // 如果是localhost，尝试获取实际IP
+                if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+                    // 显示localhost和提示
+                    document.getElementById('displayUrls').innerHTML = `
+                        <span style="background: white; padding: 4px 8px; border-radius: 4px; font-family: monospace;">
+                            ${displayUrl}
+                        </span>
+                        <span style="margin-left: 8px; color: #1976d2;">
+                            (请使用实际IP地址: http://[本机IP]:${port}/)
+                        </span>
+                    `;
+                } else {
+                    document.getElementById('displayUrls').innerHTML = `
+                        <span style="background: white; padding: 4px 8px; border-radius: 4px; font-family: monospace;">
+                            ${displayUrl}
+                        </span>
+                    `;
+                }
+            } catch (error) {
+                const port = window.location.port || '8000';
+                const protocol = window.location.protocol;
+                const host = window.location.hostname;
+                document.getElementById('displayUrls').innerHTML = `
+                    <span style="background: white; padding: 4px 8px; border-radius: 4px; font-family: monospace;">
+                        ${protocol}//${host}:${port}/
+                    </span>
+                `;
+            }
+        }
+
+        // 定时刷新
+        setInterval(loadDevices, 30000);
+    </script>
+</body>
+
+</html>

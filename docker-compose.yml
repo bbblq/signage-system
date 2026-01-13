@@ -1,0 +1,26 @@
+name: signage-system
+
+services:
+  signage-system:
+    build: .
+    container_name: signage-system
+    ports:
+      - "8000:8000"
+    volumes:
+
+      # 持久化图片存储
+      - ./images:/app/images
+      # 持久化设备数据
+      - ./devices.json:/app/devices.json
+      # 开发模式挂载：前端代码和后端主程序
+      - ./static:/app/static
+      - ./main.py:/app/main.py
+    environment:
+      - TZ=Asia/Shanghai
+    restart: unless-stopped
+    networks:
+      - signage-network
+
+networks:
+  signage-network:
+    driver: bridge

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>信发系统显示端</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: black;
+            color: white;
+            font-family: sans-serif;
+        }
+
+        #image-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1s ease-in-out;
+        }
+
+        #display-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: none;
+        }
+
+        #fullscreen-prompt {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+        }
+
+        #fullscreen-prompt h2 {
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        #fullscreen-prompt p {
+            margin-bottom: 30px;
+            font-size: 18px;
+            color: #666;
+        }
+
+        #fullscreen-btn {
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #fullscreen-btn:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+
+        .welcome-message {
+            text-align: center;
+            font-size: 24px;
+            color: #999;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="fullscreen-prompt">
+        <h2>📺 欢迎使用信发系统</h2>
+        <p>为了获得最佳显示效果，请点击下方按钮进入全屏模式</p>
+        <button id="fullscreen-btn" onclick="enterFullscreen()">进入全屏</button>
+    </div>
+
+    <div id="image-container">
+        <div class="welcome-message" id="welcomeMessage">
+            等待推送图片...
+        </div>
+        <img id="display-image" src="" alt="推送图片">
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin; // 与后端同端口
+        // 稳定设备ID：首次生成并存储在 localStorage
+        function getOrCreateDeviceId() {
+            const key = 'SIGNAGE_DEVICE_ID';
+            let id = localStorage.getItem(key);
+            if (!id) {
+                id = 'TV-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+                localStorage.setItem(key, id);
+            }
+            return id;
+        }
+        const DEVICE_ID = getOrCreateDeviceId();
+        const HEARTBEAT_INTERVAL = 10000; // 10秒心跳
+        const POLLING_INTERVAL = 5000; // 5秒轮询任务
+
+        const displayImage = document.getElementById('display-image');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const fullscreenPrompt = document.getElementById('fullscreen-prompt');
+
+        // 显示全屏提示（每次未全屏时都提示）
+        function showFullscreenPrompt() {
+            fullscreenPrompt.style.display = 'block';
+        }
+
+        // 进入全屏
+        function enterFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) { /* Safari */
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) { /* IE11 */
+                elem.msRequestFullscreen();
+            }
+            fullscreenPrompt.style.display = 'none';
+        }
+
+        // 监听全屏状态变化
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                // 退出全屏时显示提示
+                showFullscreenPrompt();
+            }
+        });
+
+        // 1. 心跳函数
+        async function sendHeartbeat() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/device/heartbeat/${DEVICE_ID}`, {
+                    method: 'POST'
+                });
+                // 不再显示心跳状态，保持界面简洁
+            } catch (error) {
+                console.error('Heartbeat failed:', error);
+            }
+        }
+
+        // 2. 任务轮询函数
+        async function checkTask() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/device/check_task/${DEVICE_ID}`);
+                const data = await response.json();
+
+                if (data.task_available) {
+                    const imageUrl = data.image_url;
+
+                    // 隐藏欢迎消息
+                    welcomeMessage.style.display = 'none';
+
+                    // 预加载新图片，避免闪黑
+                    const newImg = new Image();
+                    newImg.onload = () => {
+                        // 图片加载成功，直接切换
+                        displayImage.src = imageUrl;
+                        displayImage.style.display = 'block';
+                        displayImage.style.opacity = 1;
+                    };
+                    newImg.onerror = () => {
+                        console.error('Image load failed');
+                        displayImage.style.display = 'none';
+                        welcomeMessage.style.display = 'block';
+                        welcomeMessage.textContent = '图片加载失败';
+                    };
+                    newImg.src = imageUrl;
+                }
+            } catch (error) {
+                console.error('Check task failed:', error);
+            }
+        }
+
+        // 启动客户端
+        function startClient() {
+            // 页面加载后3秒显示全屏提示
+            setTimeout(() => {
+                if (!document.fullscreenElement) {
+                    showFullscreenPrompt();
+                }
+            }, 1500);
+
+            // 立即发送一次心跳和检查任务
+            sendHeartbeat();
+            checkTask();
+
+            // 定时发送心跳
+            setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+
+            // 定时轮询任务
+            setInterval(checkTask, POLLING_INTERVAL);
+        }
+
+        // 启动
+        startClient();
+    </script>
+</body>
+
+</html>
