@@ -265,6 +265,18 @@ def get_images():
             })
     return images
 
+@app.delete("/api/v1/manager/delete_image/{filename}")
+def delete_image(filename: str):
+    """删除图片文件"""
+    file_path = IMAGE_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Image not found")
+    try:
+        os.remove(file_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete file: {e}")
+    return {"message": f"Image {filename} deleted"}
+
 @app.post("/api/v1/manager/push_image")
 def push_image(device_id: str = Body(..., embed=True), image_filename: str = Body(..., embed=True)):
     """
