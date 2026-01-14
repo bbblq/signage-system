@@ -297,6 +297,7 @@ def push_image(device_id: str = Body(..., embed=True), image_filename: str = Bod
     
     # 立即更新设备状态中的当前节目名
     devices[device_id].current_program_name = image_filename
+    devices[device_id].current_task = image_url
     save_devices_to_disk()
     
     return {"message": f"Push command sent to device {device_id}", "image_url": image_url}
@@ -319,6 +320,7 @@ def push_image_bulk(device_ids: List[str] = Body(..., embed=True), image_filenam
         pending_tasks[device_id] = PushTask(image_url=image_url, timestamp=time.time())
         # 立即更新设备状态中的当前节目名
         devices[device_id].current_program_name = image_filename
+        devices[device_id].current_task = image_url
         created_for.append(device_id)
     save_devices_to_disk()
     return {"message": f"Push command sent to {len(created_for)} devices", "image_url": image_url, "device_ids": created_for}
@@ -392,6 +394,8 @@ def start_slideshow(device_id: str = Body(..., embed=True),
     
     # 更新设备状态中的当前节目名
     devices[device_id].current_program_name = program_name
+    if valid_images:
+        devices[device_id].current_task = f"/images/{valid_images[0]}"
     save_devices_to_disk()
     
     return {"message": f"Slideshow started for device {device_id}", "images": valid_images, "interval": interval_seconds}
