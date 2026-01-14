@@ -88,6 +88,8 @@
 <body>
     <div id="fullscreen-prompt">
         <h2>📺 欢迎使用信发系统</h2>
+        <p id="device-name-display" style="font-size: 18px; font-weight: bold; color: #444; margin-bottom: 15px;">
+            正在连接...</p>
         <p>为了获得最佳显示效果，请点击下方按钮进入全屏模式</p>
         <button id="fullscreen-btn" onclick="enterFullscreen()">进入全屏</button>
     </div>
@@ -151,7 +153,11 @@
                 const response = await fetch(`${API_BASE}/api/v1/device/heartbeat/${DEVICE_ID}`, {
                     method: 'POST'
                 });
-                // 不再显示心跳状态，保持界面简洁
+                const data = await response.json();
+                if (data.name) {
+                    const nameDisplay = document.getElementById('device-name-display');
+                    if (nameDisplay) nameDisplay.textContent = `当前设备: ${data.name}`;
+                }
             } catch (error) {
                 console.error('Heartbeat failed:', error);
             }

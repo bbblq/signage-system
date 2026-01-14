@@ -143,7 +143,7 @@ def device_heartbeat(device_id: str):
             name=device_id
         )
     save_devices_to_disk()
-    return {"message": "Heartbeat received", "device_id": device_id}
+    return {"message": "Heartbeat received", "device_id": device_id, "name": devices[device_id].name}
 
 @app.get("/api/v1/device/check_task/{device_id}")
 def check_task(device_id: str):
